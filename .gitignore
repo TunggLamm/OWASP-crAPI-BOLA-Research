@@ -1,0 +1,30 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.jwt
+*.token
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Databases and logs
+*.sql
+*.dump
+*.sqlite
+*.db
+*.log
+
+# Build outputs
+.gradle/
+build/
+target/
+vendor/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
