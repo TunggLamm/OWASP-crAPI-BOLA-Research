@@ -1,11 +1,6 @@
-# Before-patch evidence — pending
+# Before-Patch Evidence (Vulnerable Baseline)
 
-Add evidence only after reconstructing the original vulnerable build and reproducing the behavior again.
+Screenshots captured on the unmodified OWASP crAPI deployment demonstrating the vulnerability chain:
 
-Required captures:
-
-1. Community recent-posts response showing the other test user's vehicle identifier.
-2. Burp Repeater request using Client A's authenticated session and Client B's vehicle UUID.
-3. Matching response showing Client B's vehicle location/owner data.
-
-Redact JWTs, cookies and credentials. Do not create or alter screenshots to make them look like earlier captures. Record the actual date of reconstruction in the report.
+1. [`01-community-response.png`](./01-community-response.png) — `GET /community/api/v2/community/posts/recent` returning `200 OK` and exposing `vehicleid` and `email` inside each post's `author` object.
+2. [`02-bola-vehicle-location-poc.png`](./02-bola-vehicle-location-poc.png) — BOLA Proof of Concept: Client A's authenticated session requesting Client B's vehicle (`GET /identity/api/v2/vehicle/323e8a0f-95cb-448b-a234-9c58c101a9cc/location`) and receiving `200 OK` with Client B's GPS coordinates and personal info.

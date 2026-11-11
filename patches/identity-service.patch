@@ -1,0 +1,99 @@
+diff --git a/services/identity/src/main/java/com/crapi/controller/VehicleController.java b/services/identity/src/main/java/com/crapi/controller/VehicleController.java
+--- a/services/identity/src/main/java/com/crapi/controller/VehicleController.java
++++ b/services/identity/src/main/java/com/crapi/controller/VehicleController.java
+@@ -168,9 +168,12 @@ public class VehicleController {
+   @GetMapping("/vehicle/{carId}/location")
+-  public ResponseEntity<?> getLocationBOLA(@PathVariable("carId") UUID carId) {
+-    VehicleLocationResponse vehicleDetails =
+-        vehicleService.getVehicleLocation(carId);
++  public ResponseEntity<?> getLocationBOLA(
++      @PathVariable("carId") UUID carId,
++      HttpServletRequest request) {
++
++    VehicleLocationResponse vehicleDetails =
++        vehicleService.getVehicleLocation(carId, request);
+ 
+     if (vehicleDetails != null)
+       return ResponseEntity.ok().body(vehicleDetails);
+     else
+       return ResponseEntity.status(HttpStatus.NOT_FOUND)
+           .body(new CRAPIResponse(UserMessage.DID_NOT_GET_VEHICLE_FOR_USER));
+   }
+diff --git a/services/identity/src/main/java/com/crapi/service/VehicleService.java b/services/identity/src/main/java/com/crapi/service/VehicleService.java
+--- a/services/identity/src/main/java/com/crapi/service/VehicleService.java
++++ b/services/identity/src/main/java/com/crapi/service/VehicleService.java
+@@ -34,3 +34,6 @@ public interface VehicleService {
+-  VehicleLocationResponse getVehicleLocation(UUID carId);
++  VehicleLocationResponse getVehicleLocation(
++      UUID carId,
++      HttpServletRequest request
++  );
+ }
+diff --git a/services/identity/src/main/java/com/crapi/service/Impl/VehicleServiceImpl.java b/services/identity/src/main/java/com/crapi/service/Impl/VehicleServiceImpl.java
+--- a/services/identity/src/main/java/com/crapi/service/Impl/VehicleServiceImpl.java
++++ b/services/identity/src/main/java/com/crapi/service/Impl/VehicleServiceImpl.java
+@@ -215,35 +215,57 @@ public class VehicleServiceImpl implements VehicleService {
+   @Transactional
+   @Override
+-  public VehicleLocationResponse getVehicleLocation(UUID carId) {
++  public VehicleLocationResponse getVehicleLocation(
++      UUID carId, HttpServletRequest request) {
++
+     VehicleDetails vehicleDetails = null;
+     VehicleLocationResponse vehicleLocationForm = null;
+     UserDetails userDetails = null;
+-    Random random = new Random();
+ 
+     try {
++      // Retrieve the authenticated user from the request JWT
++      User user = userService.getUserFromToken(request);
++
++      // Retrieve the requested vehicle
+       vehicleDetails = vehicleDetailsRepository.findByUuid(carId);
+ 
+-      if (vehicleDetails != null) {
+-        if (vehicleDetails.getOwner() != null) {
++      if (vehicleDetails != null
++          && vehicleDetails.getOwner() != null
++          && user != null) {
++
++        // Verify that the authenticated user owns the requested vehicle
++        if (vehicleDetails.getOwner().getId().equals(user.getId())) {
++
+           userDetails = userDetailsRepository.findByUser_id(
+               vehicleDetails.getOwner().getId()
+           );
+ 
+           vehicleLocationForm =
+               new VehicleLocationResponse(
+                   carId,
+-                  (userDetails != null ? userDetails.getName() : null),
++                  (userDetails != null
++                      ? userDetails.getName() : null),
+                   (userDetails != null
+                       ? userDetails.getUser().getEmail() : null),
+                   vehicleDetails.getVehicleLocation()
+               );
+ 
+           return vehicleLocationForm;
++
++        } else {
++          log.warn(
++              "BOLA attempt detected: User {} tried to access vehicle {}",
++              user.getEmail(),
++              carId
++          );
+         }
+       }
++
+     } catch (Exception exception) {
+-      log.error("Fail to get vehicle location-> Message: {}", exception);
++      log.error(
++          "Fail to get vehicle location-> Message: {}",
++          exception
++      );
+     }
+ 
+     return null;
+   }
+
